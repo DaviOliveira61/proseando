@@ -1,6 +1,7 @@
-use std::io::{self, Read};
-
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+use crossterm::{
+    event::{Event::Key, KeyCode::Char, read},
+    terminal::{disable_raw_mode, enable_raw_mode},
+};
 
 pub struct Editor {}
 
@@ -10,42 +11,26 @@ impl Editor {
     }
 
     pub fn run(&self) {
-        enable_raw_mode().unwrap();
-        for b in io::stdin().bytes() {
-            /* With unwrap (I'll take the control)
-            let b = b.unwrap();
-            let c = b as char;
+        if let Err(err) = self.repl() {
+            panic!("{err:#?}");
+        }
+        println!("Goodbye. \r\n");
+    }
 
-            if c.is_control() {
-                println!("Binary: {0:08b} ASCII: {0:#03} \r", b);
-            } else {
+    fn repl(&self) -> Result<(), std::io::Error> {
+        enable_raw_mode()?;
+        loop {
+            if let Key(event) = read()? {
+                println!("{event:?} \r");
 
-                println!("Binary: {0:08b} ASCII: {0:#03} Character: {1:#?}\r", b, c);
-            }
-            if c == 'q' {
-                disable_raw_mode().unwrap();
-                break;
-            }*/
-
-            match b {
-                Ok(b) => {
-                    let c = b as char;
-
-                    if c.is_control() {
-                        println!("Binary: {0:08b} ASCII: {0:#03} \r", b);
-                    } else {
-                        println!("Binary: {0:08b} ASCII: {0:#03} Character: {1:#?}\r", b, c);
-                    }
-
+                if let Char(c) = event.code {
                     if c == 'q' {
                         break;
                     }
                 }
-                Err(err) => {
-                    println!("{}", err);
-                }
             }
         }
-        disable_raw_mode().unwrap();
+        disable_raw_mode()?;
+        Ok(())
     }
 }
